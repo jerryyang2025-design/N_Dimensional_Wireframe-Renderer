@@ -37,6 +37,7 @@ class Display: #TODO: maybe reorganize and add more classes and maybe data class
         self.font_color = self.palettes[self.current_palette][2]
         self.fps = 30
         self.log = False
+        self.quit = False
 
 class Wireframe:
     """description"""
@@ -45,6 +46,7 @@ class Wireframe:
         self.plane = [0,2]
         self.theta = math.pi / 72
         self.angle_rotated = 0
+        self.auto_rotate = False
         self.side = 100
         self.dimensions = 3
         self.perspective = 1
@@ -90,6 +92,7 @@ def command_options(): #TODO: turn into dictionary in class and use in panel as 
     print("    save - Save the current object to a file")
     print("    keys - View actions")
     print("    help - View command list")
+    print("    quit - Close the program")
 
 def pythag(rx,ry):
     return math.sqrt(rx ** 2 + ry ** 2)
@@ -146,6 +149,7 @@ def info(display,wireframe):
                   "Edges: " + str(len(wireframe.lines)),
                   "Speed Multiplier: " + str(wireframe.speed) + "x",
                   "Scale Correction Toggle: " + str(wireframe.scale_correction),
+                  "Auto Rotation Toggle: " + str(wireframe.auto_rotate),
                   "Keep Log: " + str(display.log)] #TODO: Make it look fancier
     y = display.spacing
     for i in range(len(shown_info)):
@@ -250,6 +254,7 @@ def valid_file(file_name,wireframe):
         return True
     except FileNotFoundError:
         print("[ERROR] File name not recognized.")
+        print("     Ensure that the file exists and is placed in the 'file_shapes' folder.")
         return False
 
 # === PRESET SHAPES ===
@@ -323,7 +328,7 @@ def hyperpyramid(dimensions,display,wireframe):
 
 # === INTERACTIVE CONTROLS ===
 def panel(display,wireframe):
-    commands = ["add","remove","view lines","preset","center","clear","help","keys","plane","save","load","log","dimensions"] #TODO: move these to classes
+    commands = ["add","remove","view lines","quit","preset","center","clear","help","keys","plane","save","load","log","dimensions"] #TODO: move these to classes
     #TODO: clean up all the checks in the if statements/split into multiple if statements with more descriptive error messages once in separate functions
     presets = ["hypercube","hyperpyramid"]
     command = ""
@@ -426,6 +431,9 @@ def panel(display,wireframe):
         elif command == "log":
             display.log = not display.log
             redraw(display,wireframe)
+        elif command == "quit":
+            display.quit = True
+            break
         elif command == "view lines":
             if len(wireframe.lines) == 0:
                 print("[INFO] No lines currently present on the screen.")
@@ -483,6 +491,9 @@ def panel(display,wireframe):
                 user_input = input("Enter the file name: ")
                 if user_input == "/":
                     break
+                if not os.path.exists("file_shapes"):
+                    os.makedirs("file_shapes")
+                    print("[INFO] Created missing folder: 'file_shapes'.")
                 file_name = "file_shapes/" + user_input + ".txt"
                 if valid_file(file_name,wireframe):
                     file_pointer = open(file_name,"r")
@@ -503,6 +514,7 @@ def panel(display,wireframe):
                     break
         elif command == "save":
             while True:
+                proceed = True
                 invalid_characters = " \\/.<>?*:|\""
                 user_input = input("Enter the file name: ")
                 if user_input == "/":
@@ -510,20 +522,35 @@ def panel(display,wireframe):
                 if user_input == "" or any (ch in invalid_characters for ch in user_input):
                     print("Invalid file name!")
                     continue
+                if not os.path.exists("file_shapes"):
+                    os.makedirs("file_shapes")
+                    print("[INFO] Created missing folder: 'file_shapes'.")
                 file_name = "file_shapes/" + user_input + ".txt"
-                file_pointer = open(file_name,"w")
-                file_pointer.write("# === Saved Wireframe ===\n")
-                file_pointer.write("#   Required Dimensions: " + str(wireframe.dimensions) + "\n")
-                file_pointer.write("#   Lines: " + str(len(wireframe.lines)) + "\n")
-                file_pointer.write("\n\n\n")
-                for line in wireframe.lines:
-                    for point in line:
-                        for coordinate in point:
-                            file_pointer.write(str(coordinate) + " ")
-                    file_pointer.write("\n")
-                file_pointer.close()
-                print("[SUCCESS] " + str(len(wireframe.lines)) + " lines saved to file {" + file_name + "}.")
-                break
+                while True:
+                    if os.path.exists(file_name):
+                        print("[Notice] '" + user_input + ".txt' already exists in folder 'file_shapes'.")
+                        overwrite = input("     Are you sure you want to overwrite the existing file? (y/n)")
+                        if overwrite == "/" or overwrite.lower() == "n":
+                            proceed = False
+                            break
+                        elif overwrite.lower() == "y":
+                            break
+                        else:
+                            print("Invalid response!")
+                if proceed:
+                    file_pointer = open(file_name,"w")
+                    file_pointer.write("# === Saved Wireframe ===\n")
+                    file_pointer.write("#   Required Dimensions: " + str(wireframe.dimensions) + "\n")
+                    file_pointer.write("#   Lines: " + str(len(wireframe.lines)) + "\n")
+                    file_pointer.write("\n\n\n")
+                    for line in wireframe.lines:
+                        for point in line:
+                            for coordinate in point:
+                                file_pointer.write(str(coordinate) + " ")
+                        file_pointer.write("\n")
+                    file_pointer.close()
+                    print("[SUCCESS] " + str(len(wireframe.lines)) + " lines saved to file {" + file_name + "}.")
+                    break
         elif command == "help":
             command_options()
         elif command == "keys":
@@ -557,14 +584,16 @@ def main(): #TODO: move event checks to another function and add more helper fun
     clock = pygame.time.Clock()
     
     # Check for inputs
-    running = True
-    while running:#TODO: make another function to handle all events (similar to panel) and smaller functions within for each event
+    while not display.quit:#TODO: make another function to handle all events (similar to panel) and smaller functions within for each event
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                display.quit = True
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SLASH:
+                    print("[INFO] The display is paused while the command panel is open.")
                     panel(display,wireframe)
+                elif event.key == pygame.K_ESCAPE:
+                    display.quit = True
                 elif event.key == pygame.K_UP or event.key == pygame.K_DOWN:
                     swap_plane(event.key,wireframe)
                     if wireframe.info:
@@ -572,8 +601,14 @@ def main(): #TODO: move event checks to another function and add more helper fun
                     if display.log:
                         print("[LOG:STATE] Rotation plane set to (" + str(min(wireframe.plane)) + "," + str(max(wireframe.plane)) + ").")
                 elif event.key == pygame.K_s and (pygame.key.get_mods() & pygame.KMOD_CTRL):
-                    number_of_pngs = len([f for f in os.listdir("screenshots") if f.endswith(".png")])
-                    screenshot_name = "screenshots/Screenshot" + str(number_of_pngs + 1) + ".png"
+                    if not os.path.exists("screenshots"):
+                        os.makedirs("screenshots")
+                        print("[INFO] Created missing folder: 'screenshots'.")
+                    screenshot_name = "screenshots/Screenshot.png"
+                    number_of_pngs = 1
+                    while os.path.exists(screenshot_name):
+                        screenshot_name = "screenshots/Screenshot" + str(number_of_pngs) + ".png"
+                        number_of_pngs += 1
                     pygame.image.save(display.screen,screenshot_name)
                     print("[SUCCESS] Saved screenshot as {" + screenshot_name + "}.")
                 elif event.key == pygame.K_q:
@@ -581,6 +616,11 @@ def main(): #TODO: move event checks to another function and add more helper fun
                     redraw(display,wireframe)
                     if display.log:
                         print("[LOG:VIEW] Scale correction toggle set to " + str(wireframe.scale_correction) + ".")
+                elif event.key == pygame.K_r:
+                    wireframe.auto_rotate = not wireframe.auto_rotate
+                    redraw(display,wireframe)
+                    if display.log:
+                        print("[LOG:ROTATE] Auto rotate toggle set to " + str(wireframe.auto_rotate) + ".")
                 elif event.key == pygame.K_EQUALS:
                     if wireframe.perspective < 5:
                         wireframe.perspective += 0.2
@@ -637,7 +677,7 @@ def main(): #TODO: move event checks to another function and add more helper fun
                         wireframe.info = False
                         redraw(display,wireframe)
         key = pygame.key.get_pressed()
-        if len(wireframe.lines) != 0:
+        if len(wireframe.lines) != 0 and not wireframe.auto_rotate:
             if not key[pygame.K_RIGHT] and not key[pygame.K_LEFT]:
                 if display.log and wireframe.angle_rotated != 0:
                     print("[LOG:ROTATE] Rotated " + str(wireframe.angle_rotated) + " degrees in the (" + str(min(wireframe.plane)) + "," + str(max(wireframe.plane)) + ") plane.")
@@ -654,10 +694,21 @@ def main(): #TODO: move event checks to another function and add more helper fun
                     info(display,wireframe)
                 text = display.font.render("Press '/' to open command panel",True,display.font_color)
                 display.screen.blit(text,(display.spacing,display.side - 2 * display.spacing))
+        if wireframe.auto_rotate:
+            rotate("right",display,wireframe)
+            if wireframe.info:
+                info(display,wireframe)
+            text = display.font.render("Press '/' to open command panel",True,display.font_color)
+            display.screen.blit(text,(display.spacing,display.side - 2 * display.spacing))
         pygame.display.flip()
         clock.tick(display.fps * wireframe.speed)
     pygame.quit()
 
 # === START PROGRAM ===
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        print("[ERROR] Unexpected error: " + str(e))
+    finally:
+        pygame.quit()
