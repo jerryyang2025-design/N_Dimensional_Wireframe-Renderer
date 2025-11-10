@@ -18,7 +18,7 @@ import pygame
 import os
 
 #TODO: take more screenshots to demo
-class Display: #TODO: maybe reorganize and add more classes and maybe data classes
+class Display: #TODO: reorganize and split into more classes (especially the wireframe class) and maybe turn into data classes
     """description"""
     def __init__(self,SIDE = 800): #TODO: split file into multiple files
         pygame.init() #TODO: put other classes into another class so only one parameter is needed
@@ -55,6 +55,22 @@ class Wireframe:
         self.lines = []
         self.scale_correction = True
         self.info = False
+        self.commands = {
+            "add": "Add a new line by entering two N-dimensional points.",
+            "remove": "Remove a specific line using its two end points.",
+            "view lines": "Display a list of all current lines on screen.",
+            "clear": "Clear all lines from the display.",
+            "center": "Set the rotation center (2D coordinates).",
+            "plane": "Change the active rotation plane (two dimension indices).",
+            "preset": "Load a preset object (e.g., hypercube, hyperpyramid).",
+            "dimensions": "Set the number of dimensions for the wireframe.",
+            "save": "Save the current wireframe to a file.",
+            "load": "Load a wireframe from a saved file.",
+            "log": "Toggle console logging on or off.",
+            "keys": "Show a list of keyboard controls.",
+            "help": "Display all available commands.",
+            "quit": "Close the program."
+        }
 
 def initialize(): #TODO: reorder function locations for neatness
     """description"""
@@ -63,14 +79,15 @@ def initialize(): #TODO: reorder function locations for neatness
     wireframe = Wireframe()
     display.screen.fill(display.screen_color) #TODO: add helpful comments to organize long code and explain logic, and docstrings
     
-    # Welcome Message
-    print("\n" + "=" * 60)
-    print("N-Dimensional Wireframe Renderer".center(60))
-    print("— Description or something —".center(60))
-    print("=" * 60 + "\n") #TODO: update all print statements and make them more descriptive and helpful
+    # === Welcome Message ===
+    print("\n" + "═" * 70)
+    print("★  N-Dimensional Wireframe Renderer  ★".center(70))
+    print("A geometric visualization tool for exploring higher dimensions".center(70))
+    print("═" * 70)
+    print()
+    print("Welcome! Here are some quick tips to get started:")
     actions()
-    print("Here is the list of commands:")
-    command_options()
+    command_options(wireframe)
     
     text = display.font.render("Press '/' to open command panel",True,display.font_color)
     display.screen.blit(text,(display.spacing,display.side - 2 * display.spacing))
@@ -78,21 +95,49 @@ def initialize(): #TODO: reorder function locations for neatness
 
 # === UTILITY FUNCTIONS ===
 def actions():
-    print("Use the arrow keys, wasd, and ijkl to rotate the object.")
-    print("Press '/' to open the control panel.")
+    """Display a list of all key bindings and controls."""
+    print("\n" + "─" * 70)
+    print("Keyboard Controls".center(70))
+    print("─" * 70)
 
-def command_options(): #TODO: turn into dictionary in class and use in panel as well
-    print("    add - Add a line")
-    print("    preset - Apply a preset")
-    print("    center - Center around a point")
-    print("    plane - Set the plane of rotation")
-    print("    / - Exit the panel")
-    print("    clear - Clear all lines")
-    print("    load - Load an object from a file")
-    print("    save - Save the current object to a file")
-    print("    keys - View actions")
-    print("    help - View command list")
-    print("    quit - Close the program")
+    print("\n[ Navigation & Rotation ]")
+    print("  → / ←     Rotate object in current plane")
+    print("  ↑ / ↓     Cycle through rotation planes")
+    print("  R         Toggle auto-rotation")
+    print("  Q         Toggle scale-correction")
+
+    print("\n[ Perspective & Speed ]")
+    print("  + / -     Increase or decrease perspective depth (0 - 5)")
+    print("  [ / ]     Adjust rotation speed (0.6x - 5x)")
+
+    print("\n[ Display & Info ]")
+    print("  TAB       Toggle object info overlay")
+    print("  P         Cycle through color palettes")
+    print("  CTRL+S    Save a screenshot to the 'screenshots' folder")
+
+    print("\n[ Commands & Program ]")
+    print("  /         Open command panel (pauses display)")
+    print("  ESC       Quit the program")
+
+def command_options(wireframe):
+    """Display all available commands and their descriptions in a clean, formatted layout."""
+    print("\n" + "─" * 70)
+    print("Command Panel Commands".center(70))
+    print("─" * 70)
+
+    for command, description in wireframe.commands.items():
+        print("  " + command.ljust(15) + description)
+
+    print("─" * 70)
+    print("Tip: Type '/' at any prompt to return to the main display.")
+    print("─" * 70 + "\n")
+
+def points_equal(p1, p2, tol=1e-6):
+    return all(math.isclose(a, b, abs_tol=tol) for a, b in zip(p1, p2))
+
+def lines_equal(l1, l2, tol=1e-6):
+    return ((points_equal(l1[0], l2[0], tol) and points_equal(l1[1], l2[1], tol)) or 
+            (points_equal(l1[0], l2[1], tol) and points_equal(l1[1], l2[0], tol)))
 
 def pythag(rx,ry):
     return math.sqrt(rx ** 2 + ry ** 2)
@@ -203,7 +248,6 @@ def rotate(event,display,wireframe):
         wireframe.angle_rotated += wireframe.theta * 180 / math.pi
     else:
         wireframe.angle_rotated -= wireframe.theta * 180 / math.pi
-    round(wireframe.angle_rotated,1)
     for line in lines:
         new_line = [line[0][:], line[1][:]]
         for i in range(2):
@@ -235,23 +279,22 @@ def valid_input(position,length):
 
 def valid_file(file_name,wireframe):
     try:
-        file_pointer = open(file_name,"r")
-        for line in file_pointer:
-            test_line = line.split()
-            if len(test_line) == 0 or test_line[0] == "#":
-                continue
-            if len(test_line) != wireframe.dimensions * 2:
-                file_pointer.close()
-                print("[ERROR] File is not supported for " + str(wireframe.dimensions) + " dimensions.")
-                return False
-            point_one = test_line[:wireframe.dimensions]
-            point_two = test_line[wireframe.dimensions:]
-            if not valid_input(point_one,wireframe.dimensions) or not valid_input(point_two,wireframe.dimensions):
-                file_pointer.close()
-                print("[ERROR] File contains unrecognized characters.")
-                return False
-        file_pointer.close()
-        return True
+        with open(file_name,"r") as file_pointer:
+            index = 0
+            for line in file_pointer:
+                index += 1
+                test_line = line.split()
+                if len(test_line) == 0 or test_line[0] == "#":
+                    continue
+                if len(test_line) != wireframe.dimensions * 2:
+                    print("[ERROR] File is not supported for " + str(wireframe.dimensions) + " dimensions.")
+                    return False
+                point_one = test_line[:wireframe.dimensions]
+                point_two = test_line[wireframe.dimensions:]
+                if not valid_input(point_one,wireframe.dimensions) or not valid_input(point_two,wireframe.dimensions):
+                    print("[ERROR] File contains unrecognized characters at line " + str(index) + ".")
+                    return False
+            return True
     except FileNotFoundError:
         print("[ERROR] File name not recognized.")
         print("     Ensure that the file exists and is placed in the 'file_shapes' folder.")
@@ -328,15 +371,14 @@ def hyperpyramid(dimensions,display,wireframe):
 
 # === INTERACTIVE CONTROLS ===
 def panel(display,wireframe):
-    commands = ["add","remove","view lines","quit","preset","center","clear","help","keys","plane","save","load","log","dimensions"] #TODO: move these to classes
     #TODO: clean up all the checks in the if statements/split into multiple if statements with more descriptive error messages once in separate functions
     presets = ["hypercube","hyperpyramid"]
     command = ""
     while True:
-        command = input("Enter a command: ")
+        command = input("Enter a command: ").lower()
         if command == "/":
             break
-        if command not in commands:
+        if command not in wireframe.commands:
             print("Invalid command!")
             print("Enter 'help' to view available commands.")
             continue
@@ -390,11 +432,12 @@ def panel(display,wireframe):
                     removed = False
                     lines = wireframe.lines[:]
                     for line in lines:
-                        if remove_line == line:
-                            wireframe.lines.remove(remove_line)
+                        if lines_equal(remove_line,line):
+                            wireframe.lines.remove(line)
                             removed = True
                     if not removed:
                         print("Line not found!")
+                        print("     Enter 'view lines' to view current lines.")
                         break
                     redraw(display,wireframe)
                     if display.log:
@@ -430,6 +473,7 @@ def panel(display,wireframe):
                 print("[LOG:VIEW] Screen cleared.")
         elif command == "log":
             display.log = not display.log
+            print("[INFO] Logging set to " + str(display.log) + ".")
             redraw(display,wireframe)
         elif command == "quit":
             display.quit = True
@@ -496,22 +540,21 @@ def panel(display,wireframe):
                     print("[INFO] Created missing folder: 'file_shapes'.")
                 file_name = "file_shapes/" + user_input + ".txt"
                 if valid_file(file_name,wireframe):
-                    file_pointer = open(file_name,"r")
-                    lines = 0
-                    for line in file_pointer:
-                        test_line = line.split()
-                        if len(test_line) == 0 or test_line[0] == "#":
-                            continue
-                        point_one = test_line[:wireframe.dimensions]
-                        point_two = test_line[wireframe.dimensions:]
-                        for i in range(wireframe.dimensions):
-                            point_one[i] = float(point_one[i])
-                            point_two[i] = float(point_two[i])
-                        add_line(point_one,point_two,display,wireframe)
-                        lines += 1
-                    file_pointer.close()
-                    print("[SUCCESS] " + str(lines) + " lines loaded from file {" + file_name + "}.")
-                    break
+                    with open(file_name,"r") as file_pointer:
+                        lines = 0
+                        for line in file_pointer:
+                            test_line = line.split()
+                            if len(test_line) == 0 or test_line[0] == "#":
+                                continue
+                            point_one = test_line[:wireframe.dimensions]
+                            point_two = test_line[wireframe.dimensions:]
+                            for i in range(wireframe.dimensions):
+                                point_one[i] = float(point_one[i])
+                                point_two[i] = float(point_two[i])
+                            add_line(point_one,point_two,display,wireframe)
+                            lines += 1
+                        print("[SUCCESS] " + str(lines) + " lines loaded from file {" + file_name + "}.")
+                        break
         elif command == "save":
             while True:
                 proceed = True
@@ -528,7 +571,7 @@ def panel(display,wireframe):
                 file_name = "file_shapes/" + user_input + ".txt"
                 while True:
                     if os.path.exists(file_name):
-                        print("[Notice] '" + user_input + ".txt' already exists in folder 'file_shapes'.")
+                        print("[NOTICE] '" + user_input + ".txt' already exists in folder 'file_shapes'.")
                         overwrite = input("     Are you sure you want to overwrite the existing file? (y/n)")
                         if overwrite == "/" or overwrite.lower() == "n":
                             proceed = False
@@ -538,21 +581,20 @@ def panel(display,wireframe):
                         else:
                             print("Invalid response!")
                 if proceed:
-                    file_pointer = open(file_name,"w")
-                    file_pointer.write("# === Saved Wireframe ===\n")
-                    file_pointer.write("#   Required Dimensions: " + str(wireframe.dimensions) + "\n")
-                    file_pointer.write("#   Lines: " + str(len(wireframe.lines)) + "\n")
-                    file_pointer.write("\n\n\n")
-                    for line in wireframe.lines:
-                        for point in line:
-                            for coordinate in point:
-                                file_pointer.write(str(coordinate) + " ")
-                        file_pointer.write("\n")
-                    file_pointer.close()
-                    print("[SUCCESS] " + str(len(wireframe.lines)) + " lines saved to file {" + file_name + "}.")
-                    break
+                    with open(file_name,"w") as file_pointer:
+                        file_pointer.write("# === Saved Wireframe ===\n")
+                        file_pointer.write("#   Required Dimensions: " + str(wireframe.dimensions) + "\n")
+                        file_pointer.write("#   Lines: " + str(len(wireframe.lines)) + "\n")
+                        file_pointer.write("\n\n\n")
+                        for line in wireframe.lines:
+                            for point in line:
+                                for coordinate in point:
+                                    file_pointer.write(str(coordinate) + " ")
+                            file_pointer.write("\n")
+                        print("[SUCCESS] " + str(len(wireframe.lines)) + " lines saved to file {" + file_name + "}.")
+                        break
         elif command == "help":
-            command_options()
+            command_options(wireframe)
         elif command == "keys":
             actions()
         elif command == "preset":
@@ -599,6 +641,9 @@ def main(): #TODO: move event checks to another function and add more helper fun
                     if wireframe.info:
                         redraw(display,wireframe)
                     if display.log:
+                        if not wireframe.angle_rotated == 0 and not len(wireframe.lines) == 0:
+                            print("[LOG:ROTATE] Rotated " + str(wireframe.angle_rotated) + " degrees in the (" + str(min(wireframe.plane)) + "," + str(max(wireframe.plane)) + ") plane.")
+                            wireframe.angle_rotated = 0
                         print("[LOG:STATE] Rotation plane set to (" + str(min(wireframe.plane)) + "," + str(max(wireframe.plane)) + ").")
                 elif event.key == pygame.K_s and (pygame.key.get_mods() & pygame.KMOD_CTRL):
                     if not os.path.exists("screenshots"):
