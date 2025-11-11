@@ -1,7 +1,7 @@
 # N-D Wireframe Renderer
 
-Author: Jerry Yang
-Language: Python
+Author: Jerry Yang  
+Language: Python  
 Dependency: pygame
 
 ---
