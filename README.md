@@ -78,19 +78,24 @@ Commands are text-based and allow dynamic editing of the active wireframe:
 
 ## Project Structure
 
-nd-wireframe-renderer/
-├── wireframe_renderer/
-│   ├── main.py
-│   └── ... (to be modularized)
-├── file_shapes/
-│   ├── horse.txt
-│   └── ...
-├── screenshots/
-│   ├── Screenshot.png
-│   └── ...
-├── README.md
-├── LICENSE
-├── .gitignore
+nd-wireframe-renderer/  
+├── wireframe_renderer/  
+│   ├── main.py  
+│   ├── data.py  
+│   ├── events.py  
+│   ├── panel.py  
+│   ├── presets.py  
+│   ├── render.py  
+│   └── utils.py  
+├── file_shapes/  
+│   ├── horse.txt  
+│   └── ...  
+├── screenshots/  
+│   ├── Screenshot.png  
+│   └── ...  
+├── README.md  
+├── LICENSE  
+├── .gitignore  
 └── requirements.txt
 
 - file_shapes/ — saved or custom wireframe definitions  
