@@ -92,7 +92,7 @@ def handle_up():
     
 def handle_down():
     """Rotate the plane selection down."""
-    swap_plane("up")
+    swap_plane("down")
     if data.states.info:
         render.redraw()
     if data.states.log:
