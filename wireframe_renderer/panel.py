@@ -266,10 +266,10 @@ def handle_save():
             os.makedirs("file_shapes")
             print("[INFO] Created missing folder: 'file_shapes'.")
         file_name = "file_shapes/" + user_input + ".txt"
-        while True:
-            if os.path.exists(file_name):
+        if os.path.exists(file_name):
+            while True:
                 print("[NOTICE] '" + user_input + ".txt' already exists in folder 'file_shapes'.")
-                overwrite = input("     Are you sure you want to overwrite the existing file? (y/n)")
+                overwrite = input("     Are you sure you want to overwrite the existing file? (y/n) ")
                 if overwrite == "/" or overwrite.lower() == "n":
                     proceed = False
                     break
