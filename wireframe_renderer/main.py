@@ -33,7 +33,6 @@ def main():
     """Run the main program loop until the user quits."""
     initialize()
     panel.panel()
-    clock = pygame.time.Clock()
     
     # Check for inputs
     while not data.states.quit:
