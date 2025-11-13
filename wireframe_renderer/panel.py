@@ -277,7 +277,7 @@ def handle_save():
                     break
                 else:
                     print("Invalid response!")
-        # Ensures that the screenshot won't be saved if the user decides not to overwrite a file
+        # Ensures that the object won't be saved if the user decides not to overwrite a file
         if proceed:
             with open(file_name,"w") as file_pointer:
                 file_pointer.write("# === Saved Wireframe ===\n")
