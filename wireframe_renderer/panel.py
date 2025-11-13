@@ -127,11 +127,22 @@ def handle_dimensions():
         if not utils.valid_input(user_input.split(),1) or int(user_input) < 2:
             print("Invalid dimension!")
             continue
-        data.states.dimensions = int(user_input)
+        user_input = int(user_input)
+        if user_input >= 10:
+            print("[NOTICE] High-dimensional objects may render slowly on some machines.")
+            confirm = input("    Are you sure you want to proceed? (y/n) ").lower()
+            if confirm == "/":
+                break
+            elif confirm == "n":
+                continue
+            elif confirm == "y":
+                pass
+            else:
+                print("ಠ_ಠ  ...Your response has been set to 'no'.")
+                continue
+        data.states.dimensions = user_input
         if data.states.log:
             print("[LOG:STATE] Dimension set to " + str(data.states.dimensions) + "D.")
-        if data.states.dimensions >= 10:
-            print("[NOTICE] High-dimensional objects may render slowly on some machines.")
         data.rotation.center = [0,0]
         if data.states.dimensions == 2:
             data.rotation.plane = [0,1]
