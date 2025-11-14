@@ -66,12 +66,15 @@ def handle_add():
             if user_input == "/":
                 break
             point_two = user_input.split()
-            if (not utils.valid_input(point_two,data.states.dimensions)) or point_two == point_one:
+            if (not utils.valid_input(point_two,data.states.dimensions)):
                 print("Invalid coordinates!")
                 continue
             for i in range(data.states.dimensions):
                 point_one[i] = float(point_one[i])
                 point_two[i] = float(point_two[i])
+            if point_two == point_one:
+                print("Invalid coordinates!")
+                continue
             render.add_line(point_one,point_two)
             render.redraw()
             if data.states.log:
@@ -82,6 +85,7 @@ def handle_add():
 def handle_remove():
     """Prompt the user to remove a line by specifying two points."""
     while True:
+        removed = False
         user_input = input("Enter the coordinates of point 1: ")
         if user_input == "/":
             break
@@ -94,12 +98,15 @@ def handle_remove():
             if user_input == "/":
                 break
             point_two = user_input.split()
-            if (not utils.valid_input(point_two,data.states.dimensions)) or point_two == point_one:
+            if (not utils.valid_input(point_two,data.states.dimensions)):
                 print("Invalid coordinates!")
                 continue
             for i in range(data.states.dimensions):
                 point_one[i] = float(point_one[i])
                 point_two[i] = float(point_two[i])
+            if point_two == point_one:
+                print("Invalid coordinates!")
+                continue
             remove_line = (point_one,point_two)
             removed = False
             lines = data.wireframe.lines[:]
@@ -115,7 +122,7 @@ def handle_remove():
             if data.states.log:
                 print("[LOG:VIEW] Removed one line.")
             break
-        if removed:
+        if removed or user_input == "/":
             break
 
 def handle_dimensions():
@@ -212,7 +219,7 @@ def handle_plane():
         if user_input == "/":
             break
         plane = user_input.split()
-        if (not utils.valid_input(plane,2)) or plane[0] == plane[-1] or int(plane[0]) >= data.states.dimensions or int(plane[1]) >= data.states.dimensions or int(plane[0]) < 0 or int(plane[1]) < 0:
+        if (not utils.valid_input(plane,2)) or int(plane[0]) == int(plane[-1]) or int(plane[0]) >= data.states.dimensions or int(plane[1]) >= data.states.dimensions or int(plane[0]) < 0 or int(plane[1]) < 0:
             print("Invalid plane!")
             continue
         plane[0] = int(plane[0])
