@@ -318,7 +318,7 @@ def handle_preset():
                 print("[LOG:LOAD] Object hypercube loaded in " + str(data.states.dimensions) + " dimensions.")
         if user_input == "hyperpyramid":
             presets.hyperpyramid(data.states.dimensions)
-            if data.states.log:
+            if data.states.log and data.states.dimensions != 2:
                 print("[LOG:LOAD] Object hyperpyramid loaded in " + str(data.states.dimensions) + " dimensions.")
         render.redraw()
         break
